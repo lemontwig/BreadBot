@@ -1,13 +1,13 @@
-import discord
-import random
-import multiScraper
+import discord, random, asyncio, json, urllib.parse, urllib.request
+#import multiScraper
 from discord.ext.commands import Bot
 
 TOKEN = 'NTk3NTIwMjM1ODg0NzA3ODYy.XSJfTw.ItBVmzQ1pGlFEr9Kp4Abx-QeAPk'
 PREFIXES = ('?', '!')
 #client = discord.Client()
 client = Bot(command_prefix=PREFIXES)
-
+asyncState = type('', (), {})( )
+asyncState.userMessage = ''
 
 # Say hello!
 @client.command(name="hello",
@@ -21,8 +21,6 @@ async def sayHello(context):
 # End of hello!
 
 #"Magic" 8 Ball here
-
-
 @client.command(name="magenta8",
                 description="Answers yes/no questions",
                 aliases=["8ball"],
@@ -46,23 +44,50 @@ async def getBread(context):
 
 # anagram scraper
 
+def getAnagram(word):
+	URL = 'http://www.anagramica.com/best/:' + word
+	response = None
+	try:
+	    final = ''
+	    response = urllib.request.urlopen(URL)
+	    jsonText = response.read().decode(encoding = 'utf-8')
+	    results = json.loads(jsonText)
+	    for word in results['best']:
+	        final += (word + ' ')
+	    return final.strip().replace(' ', ', ')
+		    
+	except urllib.error.URLError:
+	    pass
+	finally:
+	    if response != None:
+		    response.close()
+
 
 @client.command(name="anagram",
-                description="anagrams any given word(s)",
+                description="anagrams the first word after the command",
                 pass_context=True)
 async def spitAnagram(context):
-    print(f"Message: {context.message}")
+    try:
 
-    print( multiScraper.main(context.message) )
-    await client.say(multiScraper.main(context.message))
+        await client.say(  context.message.author.mention + ' anagram(s) for ' + asyncState.userMessage + ': ' +  getAnagram((asyncState.userMessage.strip())))
+
+    except: #will update with specific exception
+        await client.say(context.message.author.mention + ' failed to obtain anagram')
+
+    finally:
+        asyncState.userMessage = ''
+
+        
 # end of anagram scraper
 
-"""
 @client.event
 async def on_message(message):
-	if message.startswith("!anagram"):
-		await client.say(multiScraper.main(message)
-"""
+    if (message.content.startswith("!anagram")):
+	    index = len('!anagram')
+	    asyncState.userMessage = message.content[index:]
+	    print( len(asyncState.userMessage))
+    await client.process_commands(message)
+
 
 @client.event
 async def on_ready():
