@@ -3,3 +3,4 @@ __pycache__/
 API_KEYS.txt
 .project
 .pydevproject
+users.json
