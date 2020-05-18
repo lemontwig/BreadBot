@@ -123,4 +123,3 @@ Returns what I wrote above!
 - [Pixabay API](https://pixabay.com/api/docs/)
 - [Cleverbot Free](https://github.com/plasticuproject/cleverbotfree)
 - [Wordsmith Anagram](https://wordsmith.org/anagram/)
->>>>>>> ffa62062b3a7fdfeff224b4e8a8fbfbaab1d3117
