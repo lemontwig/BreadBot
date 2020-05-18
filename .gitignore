@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 API_KEYS.txt
+.project
+.pydevproject
