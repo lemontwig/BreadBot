@@ -89,7 +89,7 @@ async def help(ctx):
     await ctx.send(embed=LevelHelp)
     await ctx.send(embed=MiscHelp)
 
-#cb = cleverbotfree.cbfree.Cleverbot()
+cb = cleverbotfree.cbfree.Cleverbot()
 
 @client.command(name='talk', description='Talk to our lovely BreadBot!', aliases=['t'])
 async def talkToBreadBot(ctx,*,message):
@@ -363,10 +363,18 @@ async def add_user(users, member):
         else:
             return ('exists', users[mID]['level'])
             
-async def add_experience(users, member):
+async def add_experience(message, users, member):
+
+    userMessage = (message.content).split()
+
     if (client.user.id != member.id):
         mID = str(member.id)
-        users[mID]['experience'] = float(users[mID]['experience']) + round(random.uniform(0,.12), 2)  #EXPERIENCE_PTS
+        if len(userMessage) > 1 and len(userMessage) < 10:
+            users[mID]['experience'] = float(users[mID]['experience']) + round(random.uniform(0, .05), 2)  #EXPERIENCE_PTS
+        elif len(userMessage) > 10:
+            users[mID]['experience'] = float(users[mID]['experience']) + round(random.uniform(0, .1), 2)  #EXPERIENCE_PTS
+
+
         return await level_up(users, member)
 
 async def level_up(users, member):
@@ -495,7 +503,7 @@ async def on_message(message):
 
     
     await add_user(users, message.author)
-    userTuple = await add_experience(users, message.author)
+    userTuple = await add_experience(message, users, message.author)
     if (userTuple[0]):
         await promote_user(message, users, message.author)
 
