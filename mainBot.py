@@ -105,6 +105,9 @@ async def talkToBreadBot(ctx,*,message):
 async def sendCount(ctx):
     await ctx.send(f'{ctx.message.author.mention} There are currently {ctx.guild.member_count} members in this server!')
 
+@client.command(name='cheems', description='returns an image of cheems')
+async def sendCheems(ctx):
+    await ctx.send(f'{ctx.message.author.mention} i like him', file=discord.File('cheems.jpg'))
 
 @client.command(name='swirl', description='swirls the center of the image')
 async def sendSwirl(ctx):
