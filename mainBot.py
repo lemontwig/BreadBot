@@ -35,7 +35,6 @@ MODS = ['389240189223960581', '555227403371413507', '181234541929824256', '21742
 
 #EXPERIENCE_PTS = .1
 
-#BOT = discord.ext.commands.Bot(_root_command_prefix = ('!', '?'))
 client = commands.Bot(command_prefix = '!')
 client.remove_command('help')
 
@@ -372,9 +371,9 @@ async def add_experience(message, users, member):
 
     if (client.user.id != member.id):
         mID = str(member.id)
-        if len(userMessage) > 1 and len(userMessage) < 10:
+        if len(userMessage) > 2 and len(userMessage) < 15:
             users[mID]['experience'] = float(users[mID]['experience']) + round(random.uniform(0, .05), 2)  #EXPERIENCE_PTS
-        elif len(userMessage) > 10:
+        elif len(userMessage) >= 15:
             users[mID]['experience'] = float(users[mID]['experience']) + round(random.uniform(0, .1), 2)  #EXPERIENCE_PTS
 
 

@@ -80,15 +80,7 @@ def swirlImage(degree):
     dst_img.save('userImg.png')
 
 def leaderboardHist(forHist):
-    """
-    names = ['daft-cumker', 'magenta semen', 'an abstract penis']*5
-    a = np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])#np.random.rand(3)
-    fig = plt.bar(a)
-    #ax.set_xticks(a,names)
-    #ax.set_xticklabels(names,rotation='vertical', fontsize=12)
-    plt.xticks(range(len(a)),names,size='xx-small', rotation = 45)
-    """
-    #forHist = [(username,xp)]
+    #usernames = [(username,xp)]
     usernames = []
     xp = []
     for user in forHist:
