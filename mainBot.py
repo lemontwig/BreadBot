@@ -1,9 +1,11 @@
 import discord, random, urllib.request, json, asyncio, os, sys
 import BreadScrape, Ranking, imageFun, cleverbotfree.cbfree, time#my libs
+import youtube_dl
 from collections import defaultdict as dd
 
 import urllib
 from discord.ext import commands
+from discord.utils import get
 
 with open('API_KEYS.txt', 'r') as KEYS:
     API_KEYS = eval(KEYS.read())
@@ -32,6 +34,7 @@ activities = ["MagentaSquash on YouTube",
 # first ID is me
 MODS = ['389240189223960581', '555227403371413507', '181234541929824256', '217423241113894913', '461709709825540126']
 
+PLAYERS = {}
 
 #EXPERIENCE_PTS = .1
 
@@ -51,9 +54,14 @@ async def help(ctx):
     LevelHelp = discord.Embed(
         color =  discord.Colour.blue()
     )
+
+    MusicHelp = discord.Embed(
+        color = discord.Colour.green()
+    )
     MiscHelp = discord.Embed(
         color = discord.Color.magenta()
     )
+
     YTHelp.set_author(name='Youtube Commands')
     YTHelp.add_field(name='yt', value = 'Search any youtube video', inline = True)
     YTHelp.add_field(name='video', value = 'Gives random magenta squash video', inline = True)
@@ -71,13 +79,19 @@ async def help(ctx):
     LevelHelp.add_field(name='rank', value = 'Shows current standing', inline = True)
     LevelHelp.add_field(name='leaderboard|lb', value = 'Shows the top 15 users', inline = True)
 
+    MusicHelp.set_author(name='Music Commands')
+    MusicHelp.add_field(name='spotify|s', value = 'Search spotify', inline = True)
+    MusicHelp.add_field(name='join', value = 'Breadbot will join your voice channel', inline=True)
+    MusicHelp.add_field(name='play', value = 'Breadbot will play your requested songs', inline=True)
+    MusicHelp.add_field(name='quit', value = 'Breadbot will leave your voice channel', inline=True)
+    
+
     MiscHelp.set_author(name= 'Misc. Help')
     MiscHelp.add_field(name='anagram', value='Anagrams 23 letters', inline = True)
     MiscHelp.add_field(name='bread', value='Gives random image of bread', inline = True)
     MiscHelp.add_field(name='help', value='Shows this message', inline = True)
     MiscHelp.add_field(name='magenta8', value='Ask a question!', inline = True)
     MiscHelp.add_field(name='social', value = 'Magenta\'s Social Media', inline = True)
-    MiscHelp.add_field(name='spotify|s', value = 'Search spotify', inline = True)
     MiscHelp.add_field(name='talk|t', value = 'Talk to me!', inline = True)
     MiscHelp.add_field(name='rockdog', value = 'See dumb rockdog', inline = True)
     MiscHelp.add_field(name='count', value = 'See the current member count!', inline = True)
@@ -86,7 +100,12 @@ async def help(ctx):
     await ctx.send(ctx.message.author.mention, embed = YTHelp)
     await ctx.send(embed=ImageHelp)
     await ctx.send(embed=LevelHelp)
+    await ctx.send(embed=MusicHelp)
     await ctx.send(embed=MiscHelp)
+
+
+
+ 
 
 cb = cleverbotfree.cbfree.Cleverbot()
 
@@ -99,6 +118,59 @@ async def talkToBreadBot(ctx,*,message):
     botResponse = cb.get_response()
     await client.wait_until_ready()
     await ctx.send(f'{ctx.message.author.mention} {botResponse}')
+
+
+@client.command(name='join', description='joins its respective voice channel', pass_context=True)
+async def join(ctx):
+    await ctx.message.author.voice.channel.connect()
+    #await leave(voice_client,ctx)
+
+
+@client.command(name='play', description='plays the first video returned')
+async def play(ctx, *, videoQuery):
+
+    url = BreadScrape.searchVideo(videoQuery)
+    if url.startswith('Coul'): #didnt find it
+        pass
+    else:
+        await ctx.send('Playing...')
+        voice = get(client.voice_clients, guild=ctx.guild)
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'postprocessors':[{
+                'key':'FFmpegExtractAudio',
+                'preferredcodec':'mp3',
+                'preferredquality':'192'
+                 }]
+            }
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        for f in os.listdir('./'):
+            if f.endswith('.mp3'):
+                name = f
+                os.rename(f,'song.mp3')
+        voice.play(discord.FFmpegPCMAudio('song.mp3'),after=lambda e:print(f'{name} has finished playin'))
+
+
+@client.command(name='quit', description='leaves its respective voice channel')
+async def leave(ctx):
+    #await ctx.message.author.voice.channel.disconnect(force=True)
+    #await (client.voice_client_in(ctx.message.guild)).disconnect()
+
+    #print(client.voice_clients[0].channel)
+    #print(ctx.message.author.voice.channel.members)
+    if ctx.message.author.voice.channel == client.voice_clients[0].channel:
+        if len(ctx.message.author.voice.channel.members) == 2:
+            await client.voice_clients[0].disconnect()
+        else: #more than the bot, and current player then you can't quit on behalf of the other user
+            await ctx.send('There is another person in here using it.')
+
+    else:
+        await ctx.send('You must be in the voice channel to do this')
+
+    #await voice_client.disconnect()
+    #await client.voice_clients[0].disconnect()
+    #print(client.voice_clients)
 
 @client.command(name='count', description='returns the total member count')
 async def sendCount(ctx):
