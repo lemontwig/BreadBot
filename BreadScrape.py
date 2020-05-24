@@ -163,4 +163,3 @@ def searchVideo(query):
             return 'https://www.youtube.com/watch?v=' + data.get('items')[0]['id']['videoId']
         except:
             return 'Couldn\'t find the video. Sorry!'
-
