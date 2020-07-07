@@ -1,4 +1,4 @@
-import discord, random, urllib.request, json, asyncio, os, sys
+import discord, random, urllib.request, json, asyncio, os, sys, shutil
 import BreadScrape, Ranking, imageFun, cleverbotfree.cbfree, time#my libs
 import youtube_dl
 from collections import defaultdict as dd
@@ -34,7 +34,7 @@ activities = ["MagentaSquash on YouTube",
 # first ID is me
 MODS = ['389240189223960581', '555227403371413507', '181234541929824256', '217423241113894913', '461709709825540126']
 
-PLAYERS = {}
+queues = {}
 
 #EXPERIENCE_PTS = .1
 
@@ -58,12 +58,14 @@ async def help(ctx):
     MusicHelp = discord.Embed(
         color = discord.Colour.green()
     )
+    """
     MiscHelp = discord.Embed(
         color = discord.Color.magenta()
     )
+    """
 
     YTHelp.set_author(name='Youtube Commands')
-    YTHelp.add_field(name='yt', value = 'Search any youtube video', inline = True)
+    YwwTHelp.add_field(name='yt', value = 'Search any youtube video', inline = True)
     YTHelp.add_field(name='video', value = 'Gives random magenta squash video', inline = True)
     YTHelp.add_field(name='subcount|subs', value = 'Get subcount of YTer', inline = True)
 
@@ -79,11 +81,14 @@ async def help(ctx):
     LevelHelp.add_field(name='rank', value = 'Shows current standing', inline = True)
     LevelHelp.add_field(name='leaderboard|lb', value = 'Shows the top 15 users', inline = True)
 
+    """
+
     MusicHelp.set_author(name='Music Commands')
     MusicHelp.add_field(name='spotify|s', value = 'Search spotify', inline = True)
     MusicHelp.add_field(name='join', value = 'Breadbot will join your voice channel', inline=True)
     MusicHelp.add_field(name='play', value = 'Breadbot will play your requested songs', inline=True)
     MusicHelp.add_field(name='quit', value = 'Breadbot will leave your voice channel', inline=True)
+    """
     
 
     MiscHelp.set_author(name= 'Misc. Help')
@@ -95,6 +100,8 @@ async def help(ctx):
     MiscHelp.add_field(name='talk|t', value = 'Talk to me!', inline = True)
     MiscHelp.add_field(name='rockdog', value = 'See dumb rockdog', inline = True)
     MiscHelp.add_field(name='count', value = 'See the current member count!', inline = True)
+    MiscHelp.add_field(name='spotify|s', value = 'Search spotify', inline = True)
+
 
 
     await ctx.send(ctx.message.author.mention, embed = YTHelp)
@@ -119,7 +126,7 @@ async def talkToBreadBot(ctx,*,message):
     await client.wait_until_ready()
     await ctx.send(f'{ctx.message.author.mention} {botResponse}')
 
-
+"""
 @client.command(name='join', description='joins its respective voice channel', pass_context=True)
 async def join(ctx):
     await ctx.message.author.voice.channel.connect()
@@ -128,12 +135,153 @@ async def join(ctx):
 
 @client.command(name='play', description='plays the first video returned')
 async def play(ctx, *, videoQuery):
+    global queues
+    url = BreadScrape.searchVideo(videoQuery)
+
+    def checkQueue():
+        queueInfile = os.path.isdir('./Queue')
+        if queueInfile:
+            DIR = os.path.abspath(os.path.realpath('Queue'))
+            length = len(os.listdir(DIR))
+            stillQueued = length-1
+            try:
+                firstFile = os.listdir(DIR)[0]
+            except:
+                print('No more queued song(s)')
+                queues.clear() #might be problematic
+                return
+            mainLoation = os.path.dirname(os.path.realpath(__file__))
+            songPath = os.path.abspath(os.path.realpath('Queue') + '\\' + firstFile)
+            if length != 0:
+                print('Song done, playing next queued song')
+                print(f'Songs still in queue" {stillQeued}')
+                songThere = os.path.isfile('song.mp3')
+                if songThere:
+                    os.remove('song.mp3')
+                shutil.move(songPath,mainLocation)
+                for f in os.listdir('./'):
+                    if f.endswith('.mp3'):
+                        os.rename(f,'song.mp3')
+                voice.play(discord.FFmpegPCMAudio('song.mp3'), after = lambda e:checkQueue())
+            else:
+                queues.clear()
+                return
+        else:
+            queues.clear()
+            return
+
+
+
+    songThere = os.path.isfile('song.mp3')
+    try:
+        if songThere:
+            os.remove('song.mp3')
+            queues.clear()
+            print('Removed old song file')
+    except PermissionError:
+        print('Trying to delete, but being played')
+        return
+
+
+    QueueInfile = os.path.isdir('./Queue')
+    try:
+        QueueFolder = './Queue'
+        if QueueInfile:
+            print('Removed old folder')
+            shutil.rmtree(QueueFolder)
+    except:
+        print('No old queue folder')
+
+    voice = get(client.voice_clients, guild=ctx.guild)
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors':[{
+            'key':'FFmpegExtractAudio',
+            'preferredcodec':'mp3',
+            'preferredquality':'192'
+             }]
+        }
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    for f in os.listdir('./'):
+        if f.endswith('.mp3'):
+            name = f
+            print(f'REnamed: {f}')
+            os.rename(f,'song.mp3')
+
+    voice.play(discord.FFmpegPCMAudio('song.mp3'),after=lambda e:checkQueue())
+        
+    await ctx.send(f'Playing: {name.rsplit("-",2)[0] + name.rsplit("-",2)[1]}')
+
+
+@client.command(name='pause', description='pauses song')
+async def pause(ctx):
+    voice = get(client.voice_clients,guild=ctx.guild)
+
+    if voice and voice.is_playing():
+        voice.pause()
+        await ctx.send('Paused')
+    else:
+        await ctx.send('Music is not playing!')
+
+@client.command(name='resume', description='resumes song')
+async def resume(ctx):
+    voice = get(client.voice_clients,guild=ctx.guild)
+
+    if voice and voice.is_paused():
+        voice.resume()
+        await ctx.send('Resuming')
+    else:
+        await ctx.send('Music is not paused')
+
+
+
+@client.command(name='queue', description='Queue next song')
+async def queueSong(ctx, *, videoQuery):
 
     url = BreadScrape.searchVideo(videoQuery)
-    if url.startswith('Coul'): #didnt find it
-        pass
+    queueInfile = os.path.isdir('./Queue')
+    if not(queueInfile):
+        os.mkdir('Queue')
+    DIR = os.path.abspath(os.path.realpath('Queue'))
+    queueNum = len(os.listdir(DIR))
+    queueNum += 1
+    addQueue = True
+    while addQueue:
+        if queueNum in queues:
+            queueNum += 1
+        else:
+            addQueue = False
+            queues[queueNum] = queueNum
+    queuePath = os.path.abspath(os.path.realpath('Queue') + f'\song{queueNum}.%(ext)s')
+    
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': queuePath,
+        'postprocessors':[{
+            'key':'FFmpegExtractAudio',
+            'preferredcodec':'mp3',
+            'preferredquality':'192'
+             }]
+        }
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+    await ctx.send('Adding song to the queue')
+
+
+            
+
+    '''
+    global PLAYCOUNT
+    QUEUE.append(url)
+    PLAYCOUNT += 1
+
+
+    if QUEUE[PLAYCOUNT].startswith('Coul'): #didnt find it
+        await ctx.send(QUEUE[PLAYCOUNT])
+
     else:
-        await ctx.send('Playing...')
         voice = get(client.voice_clients, guild=ctx.guild)
         ydl_opts = {
             'format': 'bestaudio/best',
@@ -143,38 +291,51 @@ async def play(ctx, *, videoQuery):
                 'preferredquality':'192'
                  }]
             }
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+        if len(QUEUE) == 1:
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([QUEUE[PLAYCOUNT]])
+
+        else: #we are now queueing
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([QUEUE[PLAYCOUNT]])
+
         for f in os.listdir('./'):
             if f.endswith('.mp3'):
                 name = f
                 os.rename(f,'song.mp3')
-        voice.play(discord.FFmpegPCMAudio('song.mp3'),after=lambda e:print(f'{name} has finished playin'))
 
+        try:
+
+            voice.play(discord.FFmpegPCMAudio('song.mp3'),after=lambda e:QUEUE.pop(0))
+            await ctx.send('Playing...')
+
+        except: #discord.ext.commands.errors.CommandInvokeError:
+            await ctx.send(f'Queued {videoQuery}')
+            QUEUE.append(url)
+
+    '''
 
 @client.command(name='quit', description='leaves its respective voice channel')
 async def leave(ctx):
-    #await ctx.message.author.voice.channel.disconnect(force=True)
-    #await (client.voice_client_in(ctx.message.guild)).disconnect()
 
-    #print(client.voice_clients[0].channel)
-    #print(ctx.message.author.voice.channel.members)
     if ctx.message.author.voice.channel == client.voice_clients[0].channel:
         if len(ctx.message.author.voice.channel.members) == 2:
             await client.voice_clients[0].disconnect()
+            global PLAYCOUNT
+            PLAYCOUNT = -1
         else: #more than the bot, and current player then you can't quit on behalf of the other user
             await ctx.send('There is another person in here using it.')
 
     else:
         await ctx.send('You must be in the voice channel to do this')
-
-    #await voice_client.disconnect()
-    #await client.voice_clients[0].disconnect()
-    #print(client.voice_clients)
+"""
 
 @client.command(name='count', description='returns the total member count')
 async def sendCount(ctx):
     await ctx.send(f'{ctx.message.author.mention} There are currently {ctx.guild.member_count} members in this server!')
+    with open('members.txt' , 'w') as members:
+        for member in ctx.guild.members:
+            pass
 
 @client.command(name='cheems', description='returns an image of cheems')
 async def sendCheems(ctx):
@@ -259,12 +420,13 @@ async def leaderboard(ctx):
             break
         username = str(client.get_user(int(user[0])))
         if username != 'None' and user[0] not in MODS:
-            forHist.append((username, round(float(user[1]['experience']),3)))
-            """
-            valueStr = '**' + username + '** with **' + str(int(user[1]['experience'])) + '** XP'
-            userLeaderBoard.add_field(name=ordinalNums[displayCount], value = valueStr, inline = False)
-            """
-            displayCount += 1
+            if user[0] in [str(member.id) for member in ctx.guild.members]:
+                forHist.append((username, round(float(user[1]['experience']),3)))
+                """
+                valueStr = '**' + username + '** with **' + str(int(user[1]['experience'])) + '** XP'
+                userLeaderBoard.add_field(name=ordinalNums[displayCount], value = valueStr, inline = False)
+                """
+                displayCount += 1
 
 
     imageFun.leaderboardHist(forHist)
